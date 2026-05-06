@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>3dToilet</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Datatype:wght@100..900&display=swap" rel="stylesheet">
+<style>
+:root{--fg:#e8e6e2;--fg-soft:#aaa;--fg-faint:#777;--fg-fainter:#555;--accent:#d97706;--bg-base:#252220}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;background-color:var(--bg-base);
+  background-image:linear-gradient(135deg,rgba(220,90,10,0.42) 0%,rgba(140,30,190,0.36) 30%,rgba(20,60,200,0.30) 60%,rgba(5,160,130,0.36) 100%);
+  background-size:300% 300%;background-attachment:fixed;animation:subtle-shift 22s ease infinite}
+@keyframes subtle-shift{0%{background-position:0% 0%}50%{background-position:100% 100%}100%{background-position:0% 0%}}
+body{font-family:'Datatype',monospace;color:var(--fg);background:transparent;overflow-x:hidden;position:relative}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.15) 3px,rgba(0,0,0,0.15) 4px);
+  animation:scanroll 8s linear infinite}
+@keyframes scanroll{0%{background-position:0 0}100%{background-position:0 200px}}
+@media(max-width:600px){body::before{display:none}}
+#hero{position:relative;width:100%;min-height:100svh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;overflow:hidden;padding:4rem 1.5rem 7rem;background:transparent}
+#hero-bg{display:none}#hero-scanlines{display:none}
+.title-watermark{position:fixed;inset:-120%;z-index:1;pointer-events:none;display:flex;flex-direction:column;gap:2vw;transform:rotate(-25deg);transform-origin:center center}
+.title-watermark-row{display:flex;gap:2.5vw;white-space:nowrap;animation:wmscroll 26s linear infinite}
+.title-watermark-row:nth-child(even){animation-direction:reverse;animation-duration:30s}
+.title-watermark-row span{font-family:'Datatype',monospace;font-weight:700;font-size:clamp(1rem,3.5vw,2.2rem);letter-spacing:0.08em;user-select:none;color:rgba(255,255,255,0.035);text-transform:lowercase;border:1px solid rgba(255,255,255,0.04);padding:0.12em 0.55em;border-radius:2px}
+@keyframes wmscroll{0%{transform:translateX(0)}100%{transform:translateX(-33%)}}
+.hero-video-wrap{position:relative;z-index:4;width:min(820px,90vw);aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:#111;box-shadow:0 4px 6px rgba(0,0,0,0.3),0 20px 60px rgba(0,0,0,0.5)}
+#hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:1;opacity:0;transition:opacity 1s ease}
+#hero-video.loaded{opacity:1}
+@keyframes tape-warp{0%,96%,100%{transform:none;filter:none}97%{transform:skewX(-1.5deg) translateX(3px);filter:brightness(1.12) hue-rotate(10deg)}98%{transform:skewX(0.8deg) translateX(-2px);filter:none}99%{transform:none}}
+.hero-video-wrap{animation:fadeUp 0.9s ease both,tape-warp 11s ease infinite}
+@media(max-width:600px){.hero-video-wrap{animation:fadeUp 0.9s ease both}}
+.hero-video-wrap::after{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;box-shadow:inset 0 0 40px rgba(0,0,0,0.2),inset 0 0 80px rgba(0,0,0,0.35);border-radius:6px}
+#hero-grain{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0.05;border-radius:6px}
+.hero-content{font-family:'Datatype',monospace;font-weight:700;position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:1rem;margin-top:1.75rem;animation:fadeUp 0.9s 0.2s ease both}
+.tagline{font-size:clamp(1.2rem,2.6vw,1.25rem);line-height:1.6;color:var(--fg-soft);max-width:380px}
+.hero-ctas{display:flex;gap:0.9rem;flex-wrap:wrap;justify-content:center;margin-top:0.4rem}
+.btn{display:inline-block;font-size:0.9rem;letter-spacing:0.06em;text-transform:lowercase;padding:0.75rem 1.8rem;border-radius:999px;text-decoration:none;transition:all 0.2s;cursor:pointer}
+.btn-dark{background:rgba(255,255,255,0.1);color:#fff;border:2px solid rgba(255,255,255,0.2)}
+.btn-dark:hover{background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.35)}
+.btn-accent{background:var(--accent);color:#fff;border:2px solid var(--accent)}
+.btn-accent:hover{background:#b45309;border-color:#b45309}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+#social-strip{position:absolute;bottom:2.5rem;left:0;right:0;z-index:6;display:flex;flex-direction:column;align-items:center;gap:0.45rem;padding:0 1rem;background:none}
+.social-label{font-size:0.58rem;letter-spacing:0.4em;text-transform:lowercase;color:rgba(255,255,255,0.3)}
+.social-logos{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;align-items:center;max-width:90vw}
+.social-logos a{display:block;opacity:0.5;transition:opacity 0.2s,transform 0.2s}
+.social-logos a:hover{opacity:1;transform:translateY(-2px)}
+.social-logos img{width:30px;height:30px;display:block}
+.section-label{font-size:0.65rem;letter-spacing:0.45em;text-transform:lowercase;color:var(--fg-fainter);text-align:center;margin-bottom:2rem}
+#work{background:transparent;padding:4rem 1.5rem 5rem}
+.work-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;max-width:1100px;margin:0 auto}
+.work-item{display:block;text-decoration:none;color:#fff;position:relative;border-radius:6px;overflow:hidden;background:#1a1a1a;cursor:pointer;transition:transform 0.22s ease}
+.work-item:hover{transform:scale(1.015);z-index:2}
+.work-item:hover .work-info{opacity:1}
+.work-item:hover .work-tint{opacity:0!important}
+.work-thumb{width:100%;height:100%;object-fit:cover;display:block;background:#222;position:absolute;inset:0}
+.work-tint{position:absolute;inset:0;transition:opacity 0.35s ease;pointer-events:none;background:rgba(10,8,20,0.38);opacity:1;z-index:1}
+.tint-violet,.tint-rose,.tint-amber,.tint-teal,.tint-blue,.tint-lime,.tint-fuchsia,.tint-orange{background:rgba(10,8,20,0.38)}
+.work-info{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.82) 0%,transparent 50%);display:flex;flex-direction:column;justify-content:flex-end;padding:0.85rem;opacity:0;transition:opacity 0.25s ease;z-index:2}
+@media(hover:none){.work-info{opacity:1;background:linear-gradient(to top,rgba(0,0,0,0.72) 0%,transparent 65%)}.work-tint{opacity:0.25!important}}
+.work-title{font-size:0.88rem;font-weight:500;margin-bottom:0.15rem;line-height:1.3;color:#fff}
+.work-role{font-size:0.7rem;color:rgba(255,255,255,0.55)}
+.work-tag{position:absolute;top:0.55rem;left:0.55rem;font-size:0.58rem;letter-spacing:0.12em;text-transform:lowercase;background:rgba(0,0,0,0.5);color:rgba(255,255,255,0.7);padding:2px 7px;border-radius:999px;backdrop-filter:blur(4px);z-index:3}
+.work-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0.6;transition:opacity 0.2s;z-index:2}
+.work-item:hover .work-play{opacity:0.95}
+.work-play svg{width:32px;height:32px;fill:#fff}
+.c1{grid-column:span 1}.c2{grid-column:span 2}.c3{grid-column:span 3}
+.work-item-inner{width:100%;display:block}
+.h-s{padding-bottom:40%}.h-m{padding-bottom:54%}.h-t{padding-bottom:80%}.h-xs{padding-bottom:22%}
+.work-tile{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:1.1rem;overflow:hidden}
+.work-tile img.tile-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1}
+.work-tile-inner{position:relative;z-index:2;opacity:0;transition:opacity 0.25s ease}
+.work-item:hover .work-tile-inner{opacity:1}
+@media(hover:none){.work-tile-inner{opacity:1}}
+.work-tile-label{font-size:0.58rem;letter-spacing:0.18em;text-transform:lowercase;color:rgba(255,255,255,0.55);margin-bottom:0.3rem}
+.work-tile-title{font-family:'Datatype',monospace;font-size:clamp(1rem,2vw,1.5rem);font-weight:700;line-height:1.1;color:rgba(255,255,255,0.95);letter-spacing:-0.02em}
+.work-tile-desc{font-size:0.72rem;color:rgba(255,255,255,0.6);margin-top:0.35rem;line-height:1.4}
+.work-tile-cta{font-size:0.68rem;color:rgba(255,255,255,0.5);margin-top:0.6rem;letter-spacing:0.08em}
+.tile-podcast{background:linear-gradient(140deg,#1a0a2e,#4a1a7e)}
+.tile-books{background:linear-gradient(140deg,#0a1a14,#0d4b30)}
+.tile-yt{background:linear-gradient(140deg,#1a0a0a,#5b1010)}
+.work-item.placeholder{cursor:default}.work-item.placeholder:hover{transform:none}
+.work-item.placeholder .work-thumb{filter:grayscale(100%) brightness(0.3)}
+.placeholder-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0.4rem;z-index:3}
+.placeholder-label span{font-size:0.7rem;letter-spacing:0.15em;color:rgba(255,255,255,0.35);text-transform:lowercase}
+.placeholder-label strong{font-family:'Datatype',monospace;font-size:0.95rem;color:rgba(255,255,255,0.5);text-align:center;line-height:1.3;padding:0 1rem}
+@media(max-width:700px){
+  .work-grid{grid-template-columns:1fr;gap:6px}.c1,.c2,.c3{grid-column:span 1}
+  .work-item-inner.h-s{padding-bottom:52%}.work-item-inner.h-m{padding-bottom:56%}
+  .work-info{opacity:1;background:linear-gradient(to top,rgba(0,0,0,0.78) 0%,transparent 70%)}
+  .work-tile-inner{opacity:1}.work-thumb{filter:grayscale(60%)}.work-tile-desc{display:none}
+  .work-title{font-size:0.78rem}.work-role{font-size:0.62rem}.work-tag{font-size:0.52rem}
+  .work-tile-title{font-size:0.95rem}.work-tile-label{font-size:0.52rem}.section-label{font-size:0.58rem}}
+#newsletter{background:transparent;padding:4rem 1.5rem 5rem;text-align:center;border-top:1px solid rgba(255,255,255,0.06)}
+.newsletter-heading{font-family:'Datatype',monospace;font-weight:700;font-size:clamp(2rem,6vw,3.5rem);margin-bottom:0.75rem;color:rgba(255,255,255,0.88);letter-spacing:-0.02em}
+.newsletter-sub{font-size:0.88rem;color:rgba(255,255,255,0.4);margin-bottom:2rem;max-width:320px;margin-left:auto;margin-right:auto;line-height:1.65}
+.newsletter-form{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;max-width:400px;margin:0 auto}
+.newsletter-form input{flex:1;min-width:190px;padding:0.7rem 1.1rem;border-radius:999px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#fff;font-size:0.85rem;outline:none;transition:border-color 0.2s}
+.newsletter-form input::placeholder{color:rgba(255,255,255,0.25)}
+.newsletter-form input:focus{border-color:rgba(255,255,255,0.5)}
+.newsletter-form button{padding:0.7rem 1.5rem;border-radius:999px;border:none;background:rgba(255,255,255,0.9);color:#111;font-size:0.82rem;letter-spacing:0.08em;cursor:pointer;transition:background 0.2s}
+.newsletter-form button:hover{background:#fff}
+.contact-form-wrap{width:100%;max-width:480px;background:#fff;border-radius:10px;padding:2rem 2rem 1.75rem;cursor:default}
+.contact-form-wrap h2{font-family:'Datatype',monospace;font-size:1.4rem;font-weight:700;color:#111;margin-bottom:0.35rem;letter-spacing:-0.02em}
+.contact-form-wrap label{display:block;font-size:0.72rem;letter-spacing:0.08em;color:#666;margin-bottom:0.3rem;text-transform:lowercase}
+.contact-form-wrap input,.contact-form-wrap textarea{width:100%;padding:0.65rem 0.9rem;border:1px solid #e0e0e0;border-radius:6px;font-size:0.88rem;color:#111;outline:none;transition:border-color 0.2s;margin-bottom:1rem;background:#fafafa}
+.contact-form-wrap input:focus,.contact-form-wrap textarea:focus{border-color:#111;background:#fff}
+.contact-form-wrap textarea{min-height:110px;resize:vertical}
+.cf-row{display:flex;gap:0.75rem}.cf-row>div{flex:1}
+.contact-form-submit{width:100%;padding:0.8rem;border-radius:999px;border:none;background:#111;color:#fff;font-size:0.85rem;letter-spacing:0.06em;cursor:pointer;transition:background 0.2s;margin-top:0.25rem}
+.contact-form-submit:hover{background:#333}
+.contact-success{text-align:center;padding:1.5rem 0 0.5rem;color:#111;background:#fff;border-radius:10px;max-width:480px;width:100%}
+.contact-success .cs-icon{font-size:2rem;margin-bottom:0.5rem}
+.contact-success h3{font-family:'Datatype',monospace;font-size:1.2rem;color:#111;margin-bottom:0.4rem}
+.contact-success p{font-size:0.85rem;color:#666;line-height:1.5}
+
+/* ── SLIDESHOW — arrows always visible, no scroll needed ── */
+.lb-slideshow{
+  position:relative;width:100%;max-width:900px;cursor:default;
+  display:flex;flex-direction:column;align-items:center;gap:0.6rem;
+  max-height:calc(100vh - 4rem)}
+.lb-slideshow-img-wrap{
+  position:relative;width:100%;
+  display:flex;align-items:center;justify-content:center;
+  flex:1;min-height:0}
+.lb-slideshow-img-wrap img{
+  display:block;max-width:100%;
+  max-height:calc(100vh - 9rem);
+  width:auto;height:auto;border-radius:6px;object-fit:contain}
+.lb-slide-btn{
+  position:absolute;top:50%;transform:translateY(-50%);
+  background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:1.2rem;
+  width:2.5rem;height:2.5rem;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background 0.2s;z-index:4}
+.lb-slide-btn:hover{background:rgba(0,0,0,0.9)}
+.lb-slide-prev{left:0.3rem}.lb-slide-next{right:0.3rem}
+@media(min-width:720px){.lb-slide-prev{left:-3rem}.lb-slide-next{right:-3rem}}
+/* dot indicators */
+.lb-slide-dots{display:flex;gap:5px;justify-content:center;flex-shrink:0}
+.lb-slide-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.25);transition:background 0.2s}
+.lb-slide-dot.active{background:rgba(255,255,255,0.85)}
+.lb-slide-counter{font-size:0.72rem;letter-spacing:0.2em;color:rgba(255,255,255,0.4);font-family:'Datatype',monospace;flex-shrink:0}
+/* books footer */
+.lb-books-footer{font-size:0.78rem;color:rgba(255,255,255,0.5);text-align:center;line-height:1.6;flex-shrink:0}
+.lb-books-footer a{color:rgba(255,255,255,0.8);text-decoration:underline;text-underline-offset:3px}
+/* YT slideshow */
+.lb-yt-wrap{position:relative;width:100%;display:flex;align-items:center;justify-content:center}
+.lb-yt-wrap iframe{width:100%;aspect-ratio:16/9;border:none;border-radius:6px;display:block}
+.lb-yt-wrap.shorts-wrap iframe{height:min(72vh,480px);width:auto;aspect-ratio:9/16;margin:auto}
+
+.lb-info{width:100%;max-width:900px;margin-top:0.85rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.lb-info-title{font-family:'Datatype',monospace;font-weight:700;font-size:clamp(1rem,2.5vw,1.3rem);color:rgba(255,255,255,0.92);letter-spacing:-0.02em;line-height:1.2;margin-bottom:0.25rem}
+.lb-info-desc{font-size:0.78rem;color:rgba(255,255,255,0.45);line-height:1.5}
+.lb-info-tags{display:flex;gap:0.4rem;flex-wrap:wrap;align-items:flex-start;padding-top:0.15rem}
+.lb-tag{font-size:0.58rem;letter-spacing:0.12em;text-transform:lowercase;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);padding:3px 9px;border-radius:999px;border:1px solid rgba(255,255,255,0.15)}
+#footer{background:transparent;padding:2rem 1.5rem 3rem;text-align:center;border-top:1px solid rgba(255,255,255,0.05);font-size:0.72rem;color:rgba(255,255,255,0.2);letter-spacing:0.18em}
+.particles{display:none}
+
+/* REEL CREDITS */
+.reel-credits{width:100%;max-width:900px;margin-top:1.1rem;display:flex;flex-direction:column;gap:0.55rem}
+.reel-credits-heading{font-size:0.6rem;letter-spacing:0.4em;text-transform:lowercase;color:rgba(255,255,255,0.3);margin-bottom:0.2rem}
+.reel-credit-row{display:flex;align-items:flex-start;gap:0.6rem;flex-wrap:wrap}
+.reel-credit-title{font-family:'Datatype',monospace;font-size:0.82rem;color:rgba(255,255,255,0.82);line-height:1.4;flex:1;min-width:160px}
+.reel-credit-title em{font-style:normal;color:rgba(255,255,255,0.45);font-size:0.75rem}
+.reel-credit-tags{display:flex;gap:0.35rem;flex-wrap:wrap;padding-top:0.1rem}
+.reel-credit-tag{font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.65);padding:3px 9px;border-radius:999px;border:1px solid rgba(255,255,255,0.15);white-space:nowrap}
+
+/* McDONALD'S */
+.mc-wrap{width:min(400px,90vw);background:#DA291C;border-radius:12px;overflow:hidden;cursor:default;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+.mc-header{background:#DA291C;padding:1.5rem 1.5rem 0.75rem;text-align:center}
+.mc-arches{font-size:4rem;line-height:1;color:#FFC72C;font-weight:900;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+.mc-title{color:#fff;font-size:1rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-top:0.25rem}
+.mc-body{background:#fff;padding:1.5rem}
+.mc-order{border:2px solid #DA291C;border-radius:8px;padding:1rem;margin-bottom:1rem}
+.mc-order-label{font-size:0.65rem;color:#888;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.5rem}
+.mc-order-item{display:flex;justify-content:space-between;font-size:0.88rem;color:#222;padding:0.2rem 0}
+.mc-order-item span:last-child{color:#888}
+.mc-divider{border:none;border-top:1px dashed #ddd;margin:0.6rem 0}
+.mc-status{font-size:0.8rem;font-weight:700;color:#DA291C;text-align:center;margin-bottom:0.75rem;letter-spacing:0.05em}
+.mc-bar-wrap{background:#f0f0f0;border-radius:999px;height:12px;overflow:hidden;margin-bottom:0.35rem}
+.mc-bar{height:100%;width:0%;background:linear-gradient(90deg,#DA291C,#FFC72C);border-radius:999px;animation:mcload 180s linear forwards}
+@keyframes mcload{0%{width:0%}100%{width:73%}}
+.mc-bar-label{font-size:0.65rem;color:#aaa;text-align:center;letter-spacing:0.08em}
+.mc-footer{background:#FFC72C;padding:0.6rem;text-align:center;font-size:0.7rem;font-weight:700;color:#DA291C;letter-spacing:0.1em;text-transform:uppercase}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10000;cursor:pointer;padding:1.5rem}
+.lightbox.active{display:flex}
+.lightbox-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+/* base lightbox-inner — no scroll, everything fits in viewport */
+.lightbox-inner{position:relative;z-index:1;width:100%;max-width:900px;cursor:default;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  max-height:95vh}
+/* scrollable variant for reel credits */
+.lightbox-inner.scrollable{justify-content:flex-start;overflow-y:auto;padding-top:2.5rem;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent}
+.lightbox-inner.scrollable::-webkit-scrollbar{width:3px}
+.lightbox-inner.scrollable::-webkit-scrollbar-track{background:transparent}
+.lightbox-inner.scrollable::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:999px}
+.lightbox-inner img{display:block;max-width:100%;max-height:80vh;width:auto;height:auto;border-radius:6px;object-fit:contain;margin:auto}
+.lightbox-inner iframe{width:100%;aspect-ratio:16/9;border:none;border-radius:6px;display:block}
+.lightbox-close{position:fixed;top:1.2rem;right:1.5rem;font-size:1.5rem;color:rgba(255,255,255,0.55);cursor:pointer;background:none;border:none;padding:0;line-height:1;z-index:10001}
+.lightbox-close:hover{color:#fff}
+</style>
+</head>
+<body>
+<section id="hero">
+  <div id="hero-bg"></div><div id="hero-scanlines"></div>
+  <div class="title-watermark" id="wm"></div>
+  <div class="hero-video-wrap">
+    <video id="hero-video" autoplay muted loop playsinline preload="auto">
+      <source src="reel-loop.webm" type="video/webm">
+      <source src="reel-loop.mp4" type="video/mp4">
+    </video>
+    <canvas id="hero-grain"></canvas>
+  </div>
+  <div class="hero-content">
+    <p class="tagline"><br>A creative studio specialising in video<br>based products and experiences.<br></p>
+    <div class="hero-ctas">
+      <a href="#work" class="btn btn-dark">see the work ↓</a>
+      <button class="btn btn-accent" onclick="openContactForm()">get in touch</button>
+    </div>
+  </div>
+  <div id="social-strip">
+    <div class="social-label">active on</div>
+    <div class="social-logos">
+      <a href="#" data-social-type="url" data-social-src="https://www.instagram.com/3dtoilet/"><img src="insta.png" alt="Instagram"></a>
+      <a href="#" data-social-type="url" data-social-src="mailto:3dtoilet@gmail.com"><img src="gmail.png" alt="Email"></a>
+      <a href="#" data-social-type="url" data-social-src="https://www.dropbox.com/scl/fi/rhq0scftf4osdm3ejac8z/small_personal_magazine_v_small.pdf?rlkey=68p5o6mbl169li3bkjiot160t&st=yql1y8dl&dl=0"><img src="dropbox.png" alt="Dropbox"></a>
+      <a href="#" data-social-type="image" data-social-src="hot.png"><img src="tinder.png" alt="Tinder"></a>
+      <a href="#" data-social-type="url" data-social-src="https://www.youtube.com/@terrifiednudeman"><img src="youtube.png" alt="YouTube"></a>
+      <a href="#" data-social-type="image" data-social-src="maps1.png"><img src="maps.png" alt="Maps"></a>
+      <a href="#" data-social-type="video" data-social-src="toiletpro.mp4"><img src="apple.png" alt="Apple"></a>
+      <a href="#" data-social-type="image" data-social-src="04.png"><img src="zoosk.png" alt="Zoosk"></a>
+      <a href="#" data-social-type="url" data-social-src="https://www.imdb.com/name/nm9449733/"><img src="imdb.png" alt="IMDB"></a>
+      <a href="#" data-social-type="image" data-social-src="feet.png"><img src="foot.png" alt="Foot Locker"></a>
+      <a href="#" data-social-type="image" data-social-src="eu1.png"><img src="eu.png" alt="EU"></a>
+      <a href="#" data-social-type="image" data-social-src="crypto1.png"><img src="phantom.png" alt="Phantom"></a>
+      <a href="#" data-social-type="image" data-social-src="dobby.png"><img src="bumble.png" alt="Bumble"></a>
+      <a href="#" data-social-type="image" data-social-src="drve.png"><img src="drve.png" alt="Drive"></a>
+      <a href="#" data-social-type="image" data-social-src="nyt1.jpg"><img src="nyt.png" alt="NYT"></a>
+      <a href="#" data-social-type="mc"><img src="mc.png" alt="McDonald's"></a>
+    </div>
+  </div>
+</section>
+
+<section id="work">
+  <div class="section-label">work &amp; things</div>
+  <div class="work-grid">
+    <a class="work-item c2" data-type="youtube" data-src="pQs26c1klAU">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="103fever.png" alt="103 Fever">
+      <div class="work-tint tint-violet"></div><span class="work-tag">video</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">103 Fever</div><div class="work-role">Editor / VFX &mdash; Dir. Conner O'Malley</div></div>
+    </a>
+    <a class="work-item c2" data-type="youtube" data-src="qMVdmRJMW_8">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="island.jpg" alt="Island">
+      <div class="work-tint tint-teal"></div><span class="work-tag">film</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Island: From Dreams to Ruin</div><div class="work-role">Direction / Editor &mdash; Eternal Family</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="xfqkX4rO284">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="dreamin.jpg" alt="Mac DeMarco">
+      <div class="work-tint tint-blue"></div><span class="work-tag">direction</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Mac DeMarco &mdash; Dreamin'</div><div class="work-role">Direction / Edit</div></div>
+    </a>
+    <a class="work-item c2" data-type="youtube" data-src="cJER6WtOkjk" data-title="Irish Zionism" data-tags="editing,vfx" data-desc="Editor / VFX &mdash; Dir. Conner O'Malley">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="iz1.png" alt="Irish Zionism">
+      <div class="work-tint tint-rose"></div><span class="work-tag">video</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Irish Zionism</div><div class="work-role">Editor / VFX &mdash; Dir. Conner O'Malley</div></div>
+    </a>
+    <a class="work-item c1" data-type="image" data-src="thumb17.jpg">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="thumb17.jpg" alt="Flags">
+      <div class="work-tint tint-lime"></div><span class="work-tag">installation</span>
+      <div class="work-info"><div class="work-title">Flags of Micro Nations</div><div class="work-role">Installation / print</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="7cBiyWlYous">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="endorphin.jpg" alt="Endorphin">
+      <div class="work-tint tint-teal"></div><span class="work-tag">animation</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Endorphin Port</div><div class="work-role">Design / Animation</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="aIR7ofKRUro">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="nojoy.jpg" alt="No Joy">
+      <div class="work-tint tint-violet"></div><span class="work-tag">direction</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">No Joy &mdash; Everything New</div><div class="work-role">Direction / Edit / VFX</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="bm6VOgmv9-c">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="mickey.jpg" alt="Mickey">
+      <div class="work-tint tint-blue"></div><span class="work-tag">video</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Mickey Mouse Rebrand</div><div class="work-role">Editor / VFX</div></div>
+    </a>
+    <a class="work-item c1" data-type="image" data-src="thumb33.jpg">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="thumb33.jpg" alt="Jerry Paper">
+      <div class="work-tint tint-fuchsia"></div><span class="work-tag">print</span>
+      <div class="work-info"><div class="work-title">Jerry Paper &mdash; Feels Emotions</div><div class="work-role">Record sleeve</div></div>
+    </a>
+    <a class="work-item c2" data-type="url" data-src="https://www.adultswim.com/videos/specials/dayworld">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="dayworld.jpg" alt="Dayworld">
+      <div class="work-tint tint-rose"></div><span class="work-tag">vfx</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Dayworld</div><div class="work-role">Texture Design / VFX &mdash; Adult Swim</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="SqP_UCoEtsA">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="youcandoanything.jpg" alt="You Can Do Anything">
+      <div class="work-tint tint-amber"></div><span class="work-tag">direction</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">You Can Do Anything</div><div class="work-role">Direction / Animation / Editor</div></div>
+    </a>
+    <a class="work-item c1" data-type="slideshow" data-slides='["con1.jpg","con2.jpg","con3.jpg","con4.jpg","con5.jpg","con6.jpg","con7.jpg","con8.jpg"]' data-caption="Conner O'Malley Tour Promo">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="thumb2.jpg" alt="Tour Promo">
+      <div class="work-tint tint-orange"></div><span class="work-tag">design</span>
+      <div class="work-info"><div class="work-title">Conner O'Malley Tour Promo</div><div class="work-role">Poster design &mdash; click to browse</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="sy7PcpVfOsw">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="zoom.jpg" alt="Jerry Paper Zoom">
+      <div class="work-tint tint-fuchsia"></div><span class="work-tag">direction</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Jerry Paper &mdash; Zoom Out</div><div class="work-role">Direction / Animation</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="rENqdXBLug8">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="Andy.jpg" alt="Andy Boay">
+      <div class="work-tint tint-violet"></div><span class="work-tag">direction</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Andy Boay &mdash; One &amp; One</div><div class="work-role">Direction / Edit</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="Qkylu0bbsHo" data-title="My Computer" data-tags="editor">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="computer.png" alt="My Computer">
+      <div class="work-tint tint-blue"></div><span class="work-tag">music video</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">My Computer</div><div class="work-role">Editor</div></div>
+    </a>
+    <a class="work-item c1" data-type="slideshow" data-slides='["thumb13.png","thumb4.jpg","thumb9.jpg","post3.jpg","post4.jpg","thumb25.jpg","thumb3.jpg","thumb21.jpg","thumb32.jpg","thumb22.jpg"]' data-caption="Posters">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="thumb13.png" alt="Posters">
+      <div class="work-tint tint-blue"></div><span class="work-tag">posters</span>
+      <div class="work-info"><div class="work-title">Posters</div><div class="work-role">Print design &mdash; click to browse</div></div>
+    </a>
+    <a class="work-item c2" data-type="url" data-src="https://podcasts.apple.com/gb/podcast/asmr-a-special-man-reflects/id1768016498">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="pod.png" alt="">
+      <div class="work-tint tint-violet"></div><span class="work-tag">podcast</span>
+      <div class="work-info"><div class="work-title">ASMR: A Special Man Reflects</div><div class="work-role">audio &middot; 19 episodes &mdash; listen &rarr;</div></div>
+    </a>
+    <a class="work-item c2" data-type="slideshow" data-slides='["https://www.j-a-s-o-n.com/books/book1.png","https://www.j-a-s-o-n.com/books/book2.png","thought.png"]' data-caption="books">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="book.png" alt="">
+      <div class="work-tint tint-teal"></div><span class="work-tag">books</span>
+      <div class="work-info"><div class="work-title">Books</div><div class="work-role">poetry &amp; writing &mdash; browse &rarr;</div></div>
+    </a>
+    <a class="work-item c2" data-type="yt-slideshow" data-yt-slides='["neSK8BJwM-8","uobdGnz6cmg"]' data-caption="Relaxation Pieces">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="https://img.youtube.com/vi/neSK8BJwM-8/maxresdefault.jpg" alt="Relaxation Pieces">
+      <div class="work-tint tint-teal"></div><span class="work-tag">long-form</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Relaxation Pieces</div><div class="work-role">long-form &mdash; Eternal Family</div></div>
+    </a>
+    <a class="work-item c1" data-type="url" data-src="https://maraeagle.ca/PRETTY-TALK">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="prettytalk.jpg" alt="Pretty Talk">
+      <div class="work-tint tint-fuchsia"></div><span class="work-tag">animation</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Pretty Talk</div><div class="work-role">Design / Animation</div></div>
+    </a>
+    <a class="work-item c2" data-type="yt-slideshow" data-yt-format="shorts" data-yt-slides='["XDK2EgmW4iQ","crdVdmOqsvk","k0VKfS1RyTM","9-nC8-3f1o8","JWclabFj9WQ","Wekht1VWk-o","IILTWgm3t_0"]' data-caption="YouTube Shorts">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="https://img.youtube.com/vi/XDK2EgmW4iQ/maxresdefault.jpg" alt="YouTube Shorts">
+      <div class="work-tint tint-rose"></div><span class="work-tag">shorts</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">YouTube Shorts</div><div class="work-role">playlist &mdash; Dir. Conner O'Malley</div></div>
+    </a>
+    <a class="work-item c1" data-type="url" data-src="https://www.youtube.com/@terrifiednudeman">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="youtubeME.png" alt="">
+      <div class="work-tint tint-orange"></div><span class="work-tag">youtube</span>
+      <div class="work-info"><div class="work-title">YouTube</div><div class="work-role">personal channel &mdash; browse &rarr;</div></div>
+    </a>
+    <a class="work-item c1" data-type="image" data-src="thumb23.jpg">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="thumb23.jpg" alt="">
+      <div class="work-tint tint-fuchsia"></div><span class="work-tag">design</span>
+      <div class="work-info"><div class="work-title">MindMap</div><div class="work-role">Print / graphic</div></div>
+    </a>
+    <a class="work-item c2" data-type="slideshow" data-slides='["thumb6.jpg","thumb10.jpg","thumb5.jpg"]' data-caption="Pop Up Magazine">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="thumb10.jpg" alt="Pop Up Magazine">
+      <div class="work-tint tint-rose"></div><span class="work-tag">print / event</span>
+      <div class="work-info"><div class="work-title">Pop Up Magazine</div><div class="work-role">Design &mdash; click to browse</div></div>
+    </a>
+    <a class="work-item c2" data-type="slideshow" data-slides='["sus1.png","sus2.png","sus3.png","sus4.png","sus5.png","sus6.png","sus7.png"]' data-caption="Stand Up Solutions">
+      <div class="work-item-inner h-m"></div><img class="work-thumb" src="sus4.png" alt="Stand Up Solutions">
+      <div class="work-tint tint-amber"></div><span class="work-tag">design / comedy</span>
+      <div class="work-info"><div class="work-title">Stand Up Solutions</div><div class="work-role">Presentation design &mdash; Conner O'Malley</div></div>
+    </a>
+    <a class="work-item c1" data-type="image" data-src="thumb24.jpg">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="thumb24.jpg" alt="">
+      <div class="work-tint tint-blue"></div><span class="work-tag">design</span>
+      <div class="work-info"><div class="work-title">Design Work</div><div class="work-role">Print / graphic</div></div>
+    </a>
+    <a class="work-item c1" data-type="image" data-src="thumb14.jpg">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="thumb14.jpg" alt="">
+      <div class="work-tint tint-violet"></div><span class="work-tag">design</span>
+      <div class="work-info"><div class="work-title">Nude Man</div><div class="work-role">Design / Branding</div></div>
+    </a>
+    <a class="work-item c1" data-type="image" data-src="thumb30.jpg">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="thumb30.jpg" alt="">
+      <div class="work-tint tint-teal"></div><span class="work-tag">design</span>
+      <div class="work-info"><div class="work-title">Annotated Grave</div><div class="work-role">Print / graphic</div></div>
+    </a>
+    <a class="work-item c1" data-type="youtube" data-src="HvkTky1jXbM">
+      <div class="work-item-inner h-s"></div><img class="work-thumb" src="https://img.youtube.com/vi/HvkTky1jXbM/maxresdefault.jpg" alt="Full Reel">
+      <div class="work-tint tint-amber"></div><span class="work-tag">reel</span>
+      <div class="work-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="work-info"><div class="work-title">Full Reel</div><div class="work-role">watch &rarr;</div></div>
+    </a>
+  </div>
+</section>
+
+<section id="newsletter">
+  <div class="newsletter-heading">subscribe to more information</div>
+  <p class="newsletter-sub">subscribe to sporadic information<br> delivered to email :) <br></p>
+  <form class="newsletter-form" onsubmit="handleNewsletter(event)">
+    <input type="email" placeholder="your email" required>
+    <button type="submit">subscribe</button>
+  </form>
+</section>
+<footer id="footer">3dtoilet &middot; berlin &middot; 3dtoilet@gmail.com</footer>
+
+<div id="lightbox" class="lightbox" onclick="lbBgClick(event)">
+  <div class="lightbox-backdrop"></div>
+  <div class="lightbox-inner" id="lightbox-inner">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const wm=document.getElementById('wm');
+  for(let i=0;i<20;i++){
+    const row=document.createElement('div');row.className='title-watermark-row';
+    for(let j=0;j<14;j++){const s=document.createElement('span');s.textContent='3dtoilet';row.appendChild(s);}
+    wm.appendChild(row);
+  }
+})();
+const vid=document.getElementById('hero-video');
+vid.addEventListener('canplaythrough',()=>vid.classList.add('loaded'));
+if(vid.readyState>=3)vid.classList.add('loaded');
+(function(){
+  const canvas=document.getElementById('hero-grain');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  function resize(){canvas.width=canvas.parentElement.offsetWidth;canvas.height=canvas.parentElement.offsetHeight}
+  resize();window.addEventListener('resize',resize);
+  function grain(){const w=canvas.width,h=canvas.height,img=ctx.createImageData(w,h),d=img.data;for(let i=0;i<d.length;i+=4){const v=Math.random()*255|0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=16;}ctx.putImageData(img,0,0);requestAnimationFrame(grain);}
+  grain();
+})();
+
+/* LIGHTBOX OPEN HELPER */
+function openLB(scrollable){
+  const inner=document.getElementById('lightbox-inner');
+  scrollable?inner.classList.add('scrollable'):inner.classList.remove('scrollable');
+  document.getElementById('lightbox').classList.add('active');
+  document.body.style.overflow='hidden';
+}
+
+/* IMAGE SLIDESHOW — dots + counter, arrows always in view */
+let _slides=[],_slideIdx=0,_currentCaption='';
+function lbSlideshow(images,caption,startIdx=0){
+  _slides=images;_slideIdx=startIdx;_currentCaption=caption;
+  _renderSlide();openLB(false);
+}
+function _renderSlide(){
+  const inner=document.getElementById('lightbox-inner');
+  const total=_slides.length,hasPrev=total>1;
+  const isBooks=_currentCaption==='books';
+  const dots=total>1?`<div class="lb-slide-dots">${_slides.map((_,i)=>`<div class="lb-slide-dot${i===_slideIdx?' active':''}"></div>`).join('')}</div>`:'';
+  const booksFooter=isBooks?`<div class="lb-books-footer">all titles sold out &mdash; <a href="https://www.j-a-s-o-n.com/fup.pdf" target="_blank">read <em>Free Unlimited Power</em> as PDF &rarr;</a></div>`:'';
+  inner.innerHTML=`
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <div class="lb-slideshow">
+      <div class="lb-slideshow-img-wrap">
+        ${hasPrev?`<button class="lb-slide-btn lb-slide-prev" onclick="slideStep(-1)">&#8592;</button>`:''}
+        <img src="${_slides[_slideIdx]}" alt="">
+        ${hasPrev?`<button class="lb-slide-btn lb-slide-next" onclick="slideStep(1)">&#8594;</button>`:''}
+      </div>
+      ${dots}
+      ${total>1?`<div class="lb-slide-counter">${_slideIdx+1} / ${total}</div>`:''}
+      ${booksFooter}
+    </div>`;
+}
+function slideStep(dir){_slideIdx=(_slideIdx+dir+_slides.length)%_slides.length;_renderSlide();}
+
+/* YT SLIDESHOW — dots + counter, arrows always in view */
+let _ytSlides=[],_ytSlideIdx=0,_ytFormat='normal';
+function lbYTSlideshow(ids,caption,format='normal'){
+  _ytSlides=ids;_ytSlideIdx=0;_ytFormat=format;
+  _renderYTSlide();openLB(false);
+}
+function _renderYTSlide(){
+  const inner=document.getElementById('lightbox-inner');
+  const total=_ytSlides.length,id=_ytSlides[_ytSlideIdx];
+  const isShorts=_ytFormat==='shorts';
+  const wrapClass=isShorts?'lb-yt-wrap shorts-wrap':'lb-yt-wrap';
+  const dots=total>1?`<div class="lb-slide-dots">${_ytSlides.map((_,i)=>`<div class="lb-slide-dot${i===_ytSlideIdx?' active':''}"></div>`).join('')}</div>`:'';
+  inner.innerHTML=`
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <div class="lb-slideshow">
+      <div class="${wrapClass}">
+        ${total>1?`<button class="lb-slide-btn lb-slide-prev" onclick="ytSlideStep(-1)">&#8592;</button>`:''}
+        <iframe src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0" allowfullscreen allow="autoplay;encrypted-media"></iframe>
+        ${total>1?`<button class="lb-slide-btn lb-slide-next" onclick="ytSlideStep(1)">&#8594;</button>`:''}
+      </div>
+      ${dots}
+      ${total>1?`<div class="lb-slide-counter">${_ytSlideIdx+1} / ${total}</div>`:''}
+    </div>`;
+}
+function ytSlideStep(dir){_ytSlideIdx=(_ytSlideIdx+dir+_ytSlides.length)%_ytSlides.length;_renderYTSlide();}
+
+/* VIDEO */
+function lbVideo(src){
+  const inner=document.getElementById('lightbox-inner');
+  inner.innerHTML=`<button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <video autoplay muted loop playsinline style="max-width:100%;max-height:85vh;border-radius:6px;display:block;margin:auto"><source src="${src}" type="video/mp4"></video>`;
+  openLB(false);
+}
+
+/* McDONALD'S */
+function lbMcDonalds(){
+  const inner=document.getElementById('lightbox-inner');
+  inner.innerHTML=`
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <div class="mc-wrap" onclick="event.stopPropagation()">
+      <div class="mc-header">
+        <div class="mc-arches"></div>
+        <div class="mc-title"></div>
+      </div>
+      <div class="mc-body">
+        <div class="mc-order">
+          <div class="mc-order-label">order </div>
+          <div class="mc-order-item"><span>Food Meal</span><span>€80</span></div>
+          <div class="mc-order-item"><span>Large </span><span>€3.29</span></div>
+          
+          
+          <hr class="mc-divider">
+          <div class="mc-order-item"><span><strong>Total</strong></span><span><strong>€160.26</strong></span></div>
+        </div>
+        <div class="mc-status">⏳ your food is loading...</div>
+        <div class="mc-bar-wrap"><div class="mc-bar"></div></div>
+       
+      </div>
+      <div class="mc-footer">please wait for food to come to your location</div>
+    </div>`;
+  openLB(false);
+}
+
+/* KEYBOARD */
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('lightbox').classList.contains('active'))return;
+  if(e.key==='ArrowLeft'){slideStep(-1);ytSlideStep(-1);}
+  if(e.key==='ArrowRight'){slideStep(1);ytSlideStep(1);}
+});
+
+/* CONTACT */
+function openContactForm(){
+  const inner=document.getElementById('lightbox-inner');
+  inner.innerHTML=`<button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <div class="contact-form-wrap">
+      <h2>Now it is time for us to talk</h2>
+      <form id="contact-form" onsubmit="submitContact(event)">
+        <div class="cf-row">
+          <div><label>name</label><input type="text" name="name" placeholder="Your name" required></div>
+          <div><label>email</label><input type="email" name="email" placeholder="your@email.com" required></div>
+        </div>
+        <label>subject</label><input type="text" name="subject" placeholder="What's this about?">
+        <label>message</label><textarea name="message" placeholder="what did you want to say?" required></textarea>
+        <button type="submit" class="contact-form-submit">send message &rarr;</button>
+      </form>
+    </div>`;
+  openLB(false);
+}
+async function submitContact(e){
+  e.preventDefault();const form=e.target,btn=form.querySelector('.contact-form-submit');
+  btn.textContent='sending...';btn.disabled=true;
+  const data={name:form.name.value,email:form.email.value,subject:form.subject.value||'(no subject)',message:form.message.value};
+  try{
+    const res=await fetch('https://formspree.io/f/YOUR_FORM_ID',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)});
+    if(res.ok){document.getElementById('lightbox-inner').innerHTML=`<button class="lightbox-close" onclick="closeLightbox()">✕</button><div class="contact-success"><div class="cs-icon">✉️</div><h3>message sent</h3><p>Thanks &mdash; I'll get back to you soon.</p></div>`;}
+    else{btn.textContent='something went wrong — try again';btn.disabled=false;}
+  }catch{window.location.href='mailto:3dtoilet@gmail.com?subject='+encodeURIComponent(data.subject)+'&body='+encodeURIComponent('From: '+data.name+' ('+data.email+')\n\n'+data.message);closeLightbox();}
+}
+
+function handleNewsletter(e){
+  e.preventDefault();const btn=e.target.querySelector('button'),input=e.target.querySelector('input');
+  btn.textContent='subscribed ✓';btn.style.background='rgba(255,255,255,0.45)';input.value='';input.disabled=true;btn.disabled=true;
+}
+
+/* REEL */
+const REEL_ID='HvkTky1jXbM';
+const REEL_CREDITS=[
+  {title:'Devon Welsh — You Can Do Anything',dir:null,roles:['direction','edit','animation']},
+  {title:'Irish Zionism',dir:"Dir. Conner O'Malley",roles:['edit','vfx']},
+  {title:'My Computer — Cadence Weapon',dir:'Dir. Jared Raab & Colin Medley',roles:['edit']},
+  {title:"Eleanor's Place — SNL",dir:'Dir. Cole Kush',roles:['texture design']},
+  {title:'103 Fever',dir:"Dir. Conner O'Malley",roles:['edit','vfx']},
+  {title:'Dayworld',dir:'Dir. Cole Kush & Jay Weingarten',roles:['texture design']},
+  {title:'YouTube Shorts Collection',dir:"Dir. Conner O'Malley",roles:['edit']},
+  {title:'Eternal Family Commercial',dir:'Dir. Cole Kush',roles:['edit','animation']},
+  {title:'Rebranded Mickey Mouse',dir:"Dir. Conner O'Malley",roles:['edit','vfx']},
+  {title:'Island: From Dreams to Ruin',dir:null,roles:['direction','edit']},
+  {title:'Pretty Talk',dir:'Dir. Mara Eagle',roles:['character design','animation']},
+  {title:'Endorphin Port',dir:"Dir. Conner O'Malley",roles:['animation']},
+  {title:'Andy Boay — One & One',dir:null,roles:['direction','edit']},
+  {title:'No Joy — Everything New',dir:null,roles:['direction','edit','vfx']},
+];
+function buildReelCredits(){
+  return`<div class="reel-credits"><div class="reel-credits-heading">credits</div>${REEL_CREDITS.map(c=>`<div class="reel-credit-row"><div class="reel-credit-title">${c.title}${c.dir?` <em>${c.dir}</em>`:''}</div><div class="reel-credit-tags">${c.roles.map(r=>`<span class="reel-credit-tag">${r}</span>`).join('')}</div></div>`).join('')}</div>`;
+}
+
+function lbInfoHTML(item){
+  const title=item.dataset.title||item.querySelector('.work-title')?.textContent||'';
+  const desc=item.dataset.desc||item.querySelector('.work-role')?.textContent||'';
+  const tags=(item.dataset.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
+  if(!title&&!desc&&!tags.length)return'';
+  return`<div class="lb-info"><div class="lb-info-text">${title?`<div class="lb-info-title">${title}</div>`:''} ${desc?`<div class="lb-info-desc">${desc}</div>`:''}</div>${tags.length?`<div class="lb-info-tags">${tags.map(t=>`<span class="lb-tag">${t}</span>`).join('')}</div>`:''}</div>`;
+}
+
+const isMobile=()=>window.innerWidth<=700;
+document.querySelectorAll('.work-item:not(.placeholder)').forEach(item=>{
+  item.addEventListener('click',e=>{
+    e.preventDefault();
+    const type=item.dataset.type,src=item.dataset.src;
+    if(!type||type==='none')return;
+    if(type==='url'){window.open(src,'_blank');return;}
+    if(type==='youtube'){if(isMobile()){window.open('https://www.youtube.com/watch?v='+src,'_blank');return;}lbYT(src,item);return;}
+    if(type==='image'){lbImg(src,item);return;}
+    if(type==='slideshow'){lbSlideshow(JSON.parse(item.dataset.slides||'[]'),item.dataset.caption||'');return;}
+    if(type==='yt-slideshow'){lbYTSlideshow(JSON.parse(item.dataset.ytSlides||'[]'),item.dataset.caption||'',item.dataset.ytFormat||'normal');return;}
+  });
+});
+function lbImg(src,item){
+  const inner=document.getElementById('lightbox-inner');const info=item?lbInfoHTML(item):'';
+  inner.innerHTML=`<button class="lightbox-close" onclick="closeLightbox()">✕</button><img src="${src}" alt="">${info}`;
+  openLB(false);
+}
+function lbYT(id,item){
+  const inner=document.getElementById('lightbox-inner');const info=item?lbInfoHTML(item):'';
+  const credits=(id===REEL_ID)?buildReelCredits():'';
+  inner.innerHTML=`<button class="lightbox-close" onclick="closeLightbox()">✕</button><iframe src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0" allowfullscreen allow="autoplay;encrypted-media"></iframe>${info}${credits}`;
+  openLB(id===REEL_ID);
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('active');
+  const inner=document.getElementById('lightbox-inner');
+  inner.classList.remove('scrollable');
+  inner.innerHTML='<button class="lightbox-close" onclick="closeLightbox()">✕</button>';
+  document.body.style.overflow='';
+}
+
+/* SOCIAL */
+document.querySelectorAll('#social-strip .social-logos a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    const type=a.dataset.socialType,src=a.dataset.socialSrc;
+    if(type==='mc'){lbMcDonalds();return;}
+    if(!src)return;
+    if(type==='image'){lbImg(src);}
+    else if(type==='video'){lbVideo(src);}
+    else if(type==='url'){src.startsWith('mailto:')?window.location.href=src:window.open(src,'_blank');}
+  });
+});
+function lbBgClick(e){if(e.target===document.getElementById('lightbox')||e.target.classList.contains('lightbox-backdrop'))closeLightbox();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
+</script>
+</body>
+</html>

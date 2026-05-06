@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Toilet — A New World Is Possible</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital@0;1&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --fg:#ffffff;
+      --fg-soft:rgba(255,255,255,0.75);
+      --fg-faint:rgba(255,255,255,0.45);
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;height:100%}
+
+    body{
+      font-family:Inter, system-ui, sans-serif;
+      color:var(--fg);
+      overflow-x:hidden;
+      background:linear-gradient(120deg, #ff8a00, #ff0080, #5f2cff, #00c6ff);
+      background-size:400% 400%;
+      animation:sunset 28s ease infinite;
+    }
+
+    @keyframes sunset{
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:radial-gradient(ellipse at center, rgba(0,0,0,0.1), rgba(0,0,0,0.55));
+      pointer-events:none;
+    }
+
+    main{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:8vh 6vw;
+      gap:4vh;
+    }
+
+    .title{
+      font-family:'Libre Baskerville', serif;
+      font-style:italic;
+      font-size:clamp(4rem,12vw,10rem);
+      line-height:1;
+      letter-spacing:-0.03em;
+      opacity:0.9;
+      background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.35));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-shadow:
+        0 0 2px rgba(255,255,255,0.6),
+        0 8px 24px rgba(255,255,255,0.25);
+      filter:blur(0.35px);
+    }
+
+    .subtitle{
+      font-size:0.85rem;
+      letter-spacing:0.45em;
+      text-transform:lowercase;
+      color:var(--fg-faint);
+      margin-top:0.5rem;
+    }
+
+    /* Carousel */
+    .carousel{
+      width:100%;
+      max-width:560px;
+      position:relative;
+    }
+
+    .swipe-hint{
+      position:absolute;
+      top:-1.4rem;
+      width:100%;
+      text-align:center;
+      font-size:0.7rem;
+      letter-spacing:0.35em;
+      color:var(--fg-faint);
+      pointer-events:none;
+    }
+
+    .viewport{
+      overflow:hidden;
+      padding:0.75rem; /* ensures corners + shadows never clip */
+    }
+
+    .track{
+      display:flex;
+      transition:transform .4s ease;
+    }
+
+    .item{
+      min-width:100%;
+      aspect-ratio:1 / 1;
+      margin:0 0.5rem;
+      padding:2rem;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+
+      backdrop-filter:blur(10px);
+      background:rgba(255,255,255,0.22);
+      border:1px solid rgba(255,255,255,0.45);
+      border-radius:18px;
+      box-shadow:0 20px 50px rgba(0,0,0,0.25);
+    }
+
+    .item h3{
+      margin:0 0 0.5rem 0;
+      font-weight:500;
+      font-size:2rem;
+    }
+
+    .item p{
+      margin:0;
+      font-size:0.95rem;
+      line-height:1.5;
+      color:var(--fg-soft);
+    }
+
+    /* Newsletter */
+    .newsletter{
+      margin-top:1rem;
+      display:flex;
+      justify-content:center;
+    }
+
+    .newsletter input{
+      width:100%;
+      max-width:260px;
+      padding:0.5rem 0.6rem;
+      background:rgba(255,255,255,0.85);
+      border:none;
+      border-radius:8px 0 0 8px;
+      font-size:0.85rem;
+      outline:none;
+    }
+
+    .newsletter button{
+      padding:0.5rem 0.8rem;
+      border:none;
+      background:rgba(255,255,255,0.95);
+      color:#000;
+      font-size:0.8rem;
+      border-radius:0 8px 8px 0;
+      cursor:pointer;
+    }
+
+    .controls{
+      display:flex;
+      gap:1rem;
+      justify-content:center;
+      margin-top:1rem;
+    }
+
+    .controls button{
+      background:none;
+      border:1px solid rgba(255,255,255,0.4);
+      color:var(--fg);
+      padding:0.4rem 0.8rem;
+      border-radius:999px;
+      cursor:pointer;
+      opacity:0.8;
+    }
+
+    .controls button:hover{opacity:1}
+
+    footer{
+      position:fixed;
+      bottom:2vh;
+      font-size:0.75rem;
+      letter-spacing:0.2em;
+      color:var(--fg-faint);
+    }
+
+    @media(max-width:600px){
+      .subtitle{letter-spacing:0.3em}
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <main>
+    <div>
+      <div class="title">3d toilet</div>
+      <div class="subtitle">a new world is possible</div>
+    </div>
+
+    <div class="carousel">
+      <div class="swipe-hint">← swipe →</div>
+
+      <div class="viewport">
+        <div class="track" id="track">
+          <div class="item">
+            <h3>Project Conceptualization</h3>
+            <p>Early-stage ideas, narrative framing, visual logic, and turning loose impulses into something directional.</p>
+          </div>
+
+          <div class="item">
+            <h3>Visual Content Production</h3>
+            <p>Video, motion, 3D, and experimental formats — from clean to intentionally strange.</p>
+          </div>
+
+          <div class="item">
+            <h3>Public Presentation</h3>
+            <p>Talks, lectures, screenings, and workshops. Available worldwide.</p>
+          </div>
+
+          <div class="item">
+            <h3>Newsletter</h3>
+            <p>Occasional writing on culture, aesthetics, technology, and new worlds.</p>
+
+            <form class="newsletter" action="https://formspree.io/f/XXXXYYYY" method="POST">
+              <input type="email" name="email" placeholder="type email here" required>
+              <button type="submit">subscribe</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="prev">←</button>
+      <button id="next">→</button>
+    </div>
+
+    <footer>3d toilet</footer>
+  </main>
+
+  <script>
+    const track = document.getElementById('track');
+    const items = document.querySelectorAll('.item');
+    let index = 0;
+
+    function update(){
+      track.style.transform = `translateX(-${index * 100}%)`;
+    }
+
+    document.getElementById('next').onclick = () => {
+      index = (index + 1) % items.length;
+      update();
+    };
+
+    document.getElementById('prev').onclick = () => {
+      index = (index - 1 + items.length) % items.length;
+      update();
+    };
+
+    // swipe support
+    let startX = null;
+
+    track.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+    });
+
+    track.addEventListener('touchend', e => {
+      if(startX === null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if(Math.abs(dx) > 40){
+        index = dx < 0
+          ? (index + 1) % items.length
+          : (index - 1 + items.length) % items.length;
+        update();
+      }
+      startX = null;
+    });
+  </script>
+</body>
+</html>
